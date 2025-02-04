@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: files_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MARIADB_COLLATION_SERVER: utf8mb4_general_ci
+      MARIADB_CHARACTER_SET_SERVER: utf8mb4
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  metabase:
+    image: metabase/metabase:latest
+    container_name: metabase
+    restart: always
+    environment:
+      MB_DB_TYPE: mysql
+      MB_DB_DBNAME: files_db
+      MB_DB_PORT: 3306
+      MB_DB_USER: user
+      MB_DB_PASS: password
+      MB_DB_HOST: mariadb
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mariadb
+
+  file-scanner:
+    image: python:3.12-slim
+    container_name: file_scanner
+    restart: always
+    volumes:
+      - ./scanner:/app
+      - ./data:/data
+    working_dir: /app
+    command: ["sh", "-c", "pip install -r requirements.txt && python scanner.py"]
+    depends_on:
+      - mariadb
+
+volumes:
+  mariadb_data:
